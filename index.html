@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEMITOPIA - Defensa del Conocimiento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#2d4a22',
+                        panelBg: '#fdf6e3',
+                        cardBg: '#ffffff',
+                        accentGreen: '#77c043',
+                        accentYellow: '#ffdd4a',
+                        accentBrown: '#8d6e63',
+                        accentPurple: '#7c4dff',
+                        accentOrange: '#ff9800',
+                        accentSky: '#81d4fa',
+                        lawnLight: '#a3d977',
+                        lawnDark: '#6bbd3a'
+                    },
+                    fontFamily: { pvz: ['Fredoka','Nunito','sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body{font-family:'Fredoka',sans-serif}
+        ::-webkit-scrollbar{width:8px;height:8px}
+        ::-webkit-scrollbar-track{background:#2d4a22}
+        ::-webkit-scrollbar-thumb{background:#77c043;border-radius:10px;border:2px solid #2d4a22}
+        .grass-bg{background: repeating-linear-gradient(90deg,#a3d977 0 40px,#8fd26a 40px 80px); border:4px solid #2d4a22}
+        .sun-float{animation:float 3s ease-in-out infinite}
+        @keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-10px) rotate(10deg)}}
+        @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+        .zombie-shake:hover{animation:shake .2s infinite}
+        .wood-border{border:4px solid #2d4a22; box-shadow:6px 6px 0 #2d4a22}
+        .seed-card{transition:all .2s}
+        .seed-card:hover{transform:translateY(-4px) rotate(1deg)}
+        .duo-path-line{position:absolute;width:12px;height:85%;background:repeating-linear-gradient(to bottom,#8d6e63 0 16px,#fdf6e3 16px 20px);left:50%;transform:translateX(-50%);z-index:0;border:3px solid #2d4a22;border-radius:10px}
+    </style>
+</head>
+<body class="bg-[#87ce6b] text-[#2d4a22] min-h-screen">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+const EMAIL_CONTACTO_PQRS="contacto.semitopia@udea.edu.co";
+const SRC_PODCAST_LINK="https://www.youtube.com/embed/dQw4w9WgXcQ";
+
+const SUBREGIONES_DATA=[
+ {id:1,name:"Valle de Aburrá",locked:false,req:"Casa defendida",emoji:"🏠",plant:"🌻"},
+ {id:2,name:"Oriente",locked:false,req:"Césped listo",emoji:"🌱",plant:"🌿"},
+ {id:3,name:"Suroeste",locked:true,req:"Planta 2 girasoles",emoji:"🍒",plant:"🌽"},
+ {id:4,name:"Urabá",locked:true,req:"Frena 3 zombies",emoji:"🥥",plant:"🌊"},
+ {id:5,name:"Norte",locked:true,req:"Recolecta 100 soles",emoji:"❄️",plant:"🍄"},
+ {id:6,name:"Occidente",locked:true,req:"Pon 1 nuez",emoji:"🌵",plant:"🥜"},
+ {id:7,name:"Bajo Cauca",locked:true,req:"Explora la ruta",emoji:"🧟",plant:"🌻"},
+ {id:8,name:"Magdalena Medio",locked:true,req:"Nivel 4 jardinero",emoji:"🧟‍♂️",plant:"🔥"},
+ {id:9,name:"Nordeste",locked:true,req:"5 parcelas",emoji:"🪦",plant:"🍃"}
+];
+
+const SEMILLEROS_DATA=[
+ {id:101,regionId:2,name:"Innovación y Territorio",campus:"Carmen de Viboral",tags:["Territorio","Innovación"],desc:"Robótica agrícola y mapeo SIG para comunidades.",coord:"Dra. María Carmona",proyectos:["Robótica","SIG"],emoji:"🌻"},
+ {id:102,regionId:2,name:"Biodiversidad del Oriente",campus:"Sonsón",tags:["Biología","Agua"],desc:"Conservación de bosques de niebla y bioindicadores.",coord:"Dr. Carlos Ríos",proyectos:["Flora","Agua"],emoji:"🌱"},
+ {id:103,regionId:2,name:"Educación y Sociedad",campus:"Rionegro",tags:["Educación"],desc:"Aulas digitales rurales.",coord:"Lic. Ana Gómez",proyectos:["Aulas digitales"],emoji:"🍄"},
+ {id:104,regionId:2,name:"Agroecología",campus:"La Ceja",tags:["Agroecología"],desc:"Compostaje y cultivos orgánicos.",coord:"Ing. Jorge Valencia",proyectos:["Compostaje"],emoji:"🌽"},
+ {id:105,regionId:1,name:"IA Aplicada",campus:"Medellín",tags:["IA","Salud"],desc:"Visión por computador médica.",coord:"Dr. Esteban López",proyectos:["IA Médica"],emoji:"🧠"},
+ {id:106,regionId:4,name:"Biotecnología Marina",campus:"Turbo",tags:["Mar","Bio"],desc:"Biofiltros marinos y manglares.",coord:"Dra. Luisa Gómez",proyectos:["Biofiltros"],emoji:"🥥"}
+];
+
+const RETOS_GENERALES=[
+ {id:1,title:"Recolecta 50 soles",desc:"Visita 2 subregiones.",xp:50,completed:true,icon:"☀️"},
+ {id:2,title:"Planta 3 girasoles",desc:"Abre 3 semilleros.",xp:100,completed:false,icon:"🌻"},
+ {id:3,title:"Noche de zombies",desc:"Reto colectivo Medellín-Regiones.",xp:150,completed:false,icon:"🧟"}
+];
+
+const UNIDADES_RUTA_INIT=[
+ {id:1,emoji:'🌻',title:'Unidad 1',subtitle:'Girasol - Introducción',progress:100,locked:false,completed:true,currentLesson:2,lessons:[
+   {type:'mcq',q:'¿Qué hace un semillero de investigación?',opts:['Investiga en equipo','Solo siembra semillas','Vende plantas'],correct:0,hint:'Siembra ideas',ok:'¡Exacto! Investiga en equipo',fail:'No es agricultura literal'},
+   {type:'text',q:'Reto: Escribe en 10 palabras qué tema te apasiona',placeholder:'Quiero investigar...',minWords:5,ok:'¡Semilla plantada!',fail:'Mínimo 5 palabras'}
+ ]},
+ {id:2,emoji:'🌱',title:'Unidad 2',subtitle:'Lanzaguisantes - Fundamentos',progress:45,locked:false,completed:false,currentLesson:0,lessons:[
+   {type:'mcq',q:'¿Para qué sirve la pregunta de investigación?',opts:['Guiar todo el estudio','Decorar el informe','No sirve'],correct:0,hint:'Es la brújula',ok:'¡Disparo certero!',fail:'Sin pregunta te pierdes'},
+   {type:'mcq',q:'Elige metodología:',opts:['Cualitativa','Cuantitativa','Mixta'],correct:2,ok:'¡Mixta es top!',fail:'Mixta es más versátil'},
+   {type:'text',q:'Escribe tu pregunta en 1 frase',placeholder:'¿Cómo influye...?',minWords:6,ok:'¡Raíces firmes!',fail:'Mínimo 6 palabras'}
+ ]},
+ {id:3,emoji:'🍒',title:'Unidad 3',subtitle:'Cereza Bomba - Formulación',progress:0,locked:true,completed:false,currentLesson:0,lessons:[
+   {type:'mcq',q:'¿Qué lleva un proyecto explosivo?',opts:['Problema, objetivos, metodología','Solo título','Copiar Wikipedia'],correct:0,ok:'¡BOOM!',fail:'Le faltan partes'},
+   {type:'text',q:'Escribe tu objetivo general',placeholder:'Analizar...',minWords:7,ok:'¡Objetivo listo!',fail:'Mínimo 7 palabras'}
+ ]},
+ {id:4,emoji:'🥜',title:'Unidad 4',subtitle:'Nuez - Proyecto',progress:0,locked:true,completed:false,currentLesson:0,lessons:[
+   {type:'mcq',q:'¿Qué es la Nuez?',opts:['Protección para tu idea','Se come','Decoración'],correct:0,ok:'¡Roca sólida!',fail:'Es tu escudo'},
+   {type:'text',q:'Describe tu aporte en 10 palabras',placeholder:'Mi investigación aportará...',minWords:10,ok:'¡Muralla lista!',fail:'Mínimo 10 palabras'}
+ ]},
+ {id:5,emoji:'🪴',title:'Unidad 5',subtitle:'Carnívora - Defensa final',progress:0,locked:true,completed:false,currentLesson:0,lessons:[
+   {type:'mcq',q:'¿Cómo defender tesis vs zombies?',opts:['Con evidencia y calma','Gritando','Huyendo'],correct:0,ok:'¡Te los comes!',fail:'Necesitas evidencia'},
+   {type:'text',q:'Tu pitch en 20 palabras',placeholder:'Mi proyecto busca...',minWords:12,ok:'¡Jardín defendido! 🏆',fail:'Mínimo 12 palabras'}
+ ]}
+];
+
+const CURSOS_DATA=[
+ {id:1,title:"Formulación de Proyectos",dur:"20h - 25 soles",desc:"Marcos lógicos y presupuestos.",emoji:"📝",plant:"🌻"},
+ {id:2,title:"Ciencia de Datos y R",dur:"35h - 50 soles",desc:"Análisis y modelado.",emoji:"📊",plant:"🧠"},
+ {id:3,title:"Redacción Científica",dur:"15h - 15 soles",desc:"Escritura estructurada.",emoji:"📚",plant:"🌱"}
+];
+
+// Datos iniciales para el módulo Social / Chat
+const CHATS_INIT = [
+  { id: 'general', name: '🌍 General - Todos los Jardineros', icon: '🌻', unread: 2, type: 'group' },
+  { id: 'oriente', name: '🌿 Subregión Oriente', icon: '🌱', unread: 0, type: 'group' },
+  { id: 'semillero-robotica', name: '🤖 Semillero Robótica Agrícola', icon: '🚜', unread: 5, type: 'group' },
+  { id: 'dave', name: '👨‍🌾 Loco Dave (Tutor Bot)', icon: '🥑', unread: 0, type: 'direct', status: 'En línea' },
+  { id: 'carlos', name: 'Dr. Carlos Ríos (Coordinador)', icon: '👨‍🔬', unread: 1, type: 'direct', status: 'Ausente' }
+];
+
+const MESSAGES_INIT = {
+  'general': [
+    { id: 1, sender: 'Ana Gómez', avatar: '👩‍🌾', text: '¡Hola a todos! ¿Alguien listo para defender la parcela de Suroeste?', time: '10:15 AM', isMe: false },
+    { id: 2, sender: 'Loco Dave', avatar: '🥑', text: '¡Wabby Wabbo! Recuerden recolectar 50 soles hoy.', time: '10:18 AM', isMe: false }
+  ],
+  'oriente': [
+    { id: 1, sender: 'Mateo (Sonsón)', avatar: '🌿', text: 'Subimos avance del biofiltro en el mapa.', time: 'Yesterday', isMe: false }
+  ],
+  'dave': [
+    { id: 1, sender: 'Loco Dave', avatar: '🥑', text: '¡Hola Valeria! ¿En qué puedo ayudarte con tu proyecto de investigación hoy? 🌻', time: '09:00 AM', isMe: false }
+  ]
+};
+
+const POSTS_INIT = [
+  { id: 1, author: 'Semillero BioMar', avatar: '🥥', region: 'Urabá', time: 'Hace 2 horas', text: '¡Instalamos los primeros sensores hidropónicos en el campus Turbo! 🌊🔬', likes: 14, liked: false, comments: 3 },
+  { id: 2, author: 'Dr. Carlos Ríos', avatar: '👨‍🔬', region: 'Oriente', time: 'Hace 5 horas', text: 'Buscamos 2 estudiantes para proyecto de análisis de calidad de agua en SonSón. ¡Hablen al DM!', likes: 29, liked: true, comments: 8 }
+];
+
+function App(){
+ const [currentView,setCurrentView]=useState('mapa');
+ const [regions,setRegions]=useState(SUBREGIONES_DATA);
+ const [selectedRegion,setSelectedRegion]=useState(null);
+ const [activeCategory,setActiveCategory]=useState('Semilleros');
+ const [searchTerm,setSearchTerm]=useState('');
+ const [globalSearch,setGlobalSearch]=useState(false);
+ const [selectedCardModal,setSelectedCardModal]=useState(null);
+ const [unlockNotification,setUnlockNotification]=useState(null);
+ const [retos,setRetos]=useState(RETOS_GENERALES);
+ const [userStats,setUserStats]=useState({level:3,title:"Jardinero Novato",xp:850,nextXp:1200,streak:5,unlockedRegions:2,totalRegions:9,points:1250,soles:450});
+ const [pqrsSuccess,setPqrsSuccess]=useState(false);
+
+ // Estados Ruta Gamificada
+ const [units,setUnits]=useState(UNIDADES_RUTA_INIT);
+ const [activeUnit,setActiveUnit]=useState(null);
+ const [selOpt,setSelOpt]=useState(null);
+ const [txtInput,setTxtInput]=useState('');
+ const [lessonStatus,setLessonStatus]=useState('idle');
+
+ // Estados Red Social y Chat
+ const [socialTab, setSocialTab] = useState('chats'); // 'chats' o 'feed'
+ const [chats, setChats] = useState(CHATS_INIT);
+ const [activeChatId, setActiveChatId] = useState('general');
+ const [messages, setMessages] = useState(MESSAGES_INIT);
+ const [newMessage, setNewMessage] = useState('');
+ const [posts, setPosts] = useState(POSTS_INIT);
+ const [newPostText, setNewPostText] = useState('');
+ const chatEndRef = useRef(null);
+
+ useEffect(() => {
+    if (currentView === 'social' && socialTab === 'chats') {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+ }, [messages, activeChatId, currentView, socialTab]);
+
+ const handleUnlockRegion=(region)=>{
+   setRegions(regions.map(r=>r.id===region.id?{...r,locked:false}:r));
+   setUserStats(p=>({...p,unlockedRegions:p.unlockedRegions+1,points:p.points+200,soles:p.soles+50}));
+   setUnlockNotification(`🎉 ¡PARCELA DESBLOQUEADA! ${region.name.toUpperCase()} defendida. ¡Los zombies no pasarán! ☀️+50`);
+   setSelectedRegion({...region,locked:false});
+   setTimeout(()=>setUnlockNotification(null),3000);
+ };
+
+ const completeReto=(id,xp)=>{
+   setRetos(retos.map(r=>r.id===id?{...r,completed:true}:r));
+   setUserStats(p=>({...p,xp:p.xp+xp,points:p.points+100,soles:p.soles+25}));
+ };
+
+ const openUnit=(u)=>{
+   if(u.locked){
+     setUnlockNotification('🧟 Unidad Bloqueada. ¡Completa las anteriores!');
+     setTimeout(()=>setUnlockNotification(null),2000);
+     return;
+   }
+   setActiveUnit(u);
+   setSelOpt(null);
+   setTxtInput('');
+   setLessonStatus('idle');
+ };
+
+ const verifyLesson=()=>{
+   const cur = activeUnit ? activeUnit.lessons[activeUnit.currentLesson] : null;
+   if(!cur) return;
+
+   if(cur.type==='mcq'){
+     if(selOpt===cur.correct) setLessonStatus('correct');
+     else { setLessonStatus('wrong'); return; }
+   } else {
+     if(txtInput.trim().split(/\s+/).filter(w=>w).length < (cur.minWords||5)){
+       setLessonStatus('wrong');
+       return;
+     }
+     setLessonStatus('correct');
+   }
+
+   setTimeout(()=>{
+     const last = activeUnit.currentLesson === activeUnit.lessons.length - 1;
+     let nextUnits = units.map(un => {
+       if(un.id !== activeUnit.id) return un;
+       return last 
+         ? {...un, progress: 100, completed: true, currentLesson: un.lessons.length}
+         : {...un, progress: Math.round(((un.currentLesson + 1) / un.lessons.length) * 100), currentLesson: un.currentLesson + 1};
+     });
+
+     if(last){
+       nextUnits = nextUnits.map(un => un.id === activeUnit.id + 1 ? {...un, locked: false} : un);
+     }
+
+     setUnits(nextUnits);
+     setUserStats(s => ({
+       ...s,
+       xp: s.xp + (last ? 50 : 25),
+       soles: s.soles + (last ? 25 : 10),
+       points: s.points + (last ? 100 : 30)
+     }));
+
+     setUnlockNotification(last ? `🎉 ¡${activeUnit.title} DEFENDIDA! +50 XP +25 Soles` : '🌻 ¡Lección plantada exitosamente!');
+     setTimeout(() => setUnlockNotification(null), 2500);
+
+     if(last){
+       setActiveUnit(null);
+     } else {
+       const updated = nextUnits.find(u => u.id === activeUnit.id);
+       setActiveUnit(updated);
+       setSelOpt(null);
+       setTxtInput('');
+       setLessonStatus('idle');
+     }
+   }, 800);
+ };
+
+ // Funciones para Chat y Social Feed
+ const sendMessage = (e) => {
+   e.preventDefault();
+   if(!newMessage.trim()) return;
+
+   const msgObj = {
+     id: Date.now(),
+     sender: 'Valeria Jiménez',
+     avatar: '👩‍🌾',
+     text: newMessage,
+     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+     isMe: true
+   };
+
+   setMessages(prev => ({
+     ...prev,
+     [activeChatId]: [...(prev[activeChatId] || []), msgObj]
+   }));
+
+   setNewMessage('');
+
+   // Respuesta simulada si se le habla a Loco Dave
+   if(activeChatId === 'dave') {
+     setTimeout(() => {
+       const daveReply = {
+         id: Date.now() + 1,
+         sender: 'Loco Dave',
+         avatar: '🥑',
+         text: '¡Wabby Wabbo! Eso suena genial para tu semillero. Recuerda aplicar la metodología de la Unidad 2.',
+         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+         isMe: false
+       };
+       setMessages(prev => ({
+         ...prev,
+         'dave': [...(prev['dave'] || []), daveReply]
+       }));
+     }, 1000);
+   }
+ };
+
+ const toggleLikePost = (postId) => {
+   setPosts(posts.map(p => {
+     if(p.id === postId) {
+       return { ...p, likes: p.liked ? p.likes - 1 : p.likes + 1, liked: !p.liked };
+     }
+     return p;
+   }));
+ };
+
+ const createPost = (e) => {
+   e.preventDefault();
+   if(!newPostText.trim()) return;
+
+   const postObj = {
+     id: Date.now(),
+     author: 'Valeria Jiménez',
+     avatar: '👩‍🌾',
+     region: 'Valle de Aburrá',
+     time: 'Justo ahora',
+     text: newPostText,
+     likes: 0,
+     liked: false,
+     comments: 0
+   };
+
+   setPosts([postObj, ...posts]);
+   setNewPostText('');
+   setUserStats(s => ({ ...s, soles: s.soles + 5, points: s.points + 10 }));
+   setUnlockNotification('📸 ¡Publicación compartida! +5 Soles ☀️');
+   setTimeout(() => setUnlockNotification(null), 2000);
+ };
+
+ const filteredSemilleros=SEMILLEROS_DATA.filter(item=>{
+   const m=item.name.toLowerCase().includes(searchTerm.toLowerCase())||item.tags.some(t=>t.toLowerCase().includes(searchTerm.toLowerCase()))||item.campus.toLowerCase().includes(searchTerm.toLowerCase());
+   if(globalSearch) return m;
+   return m && (selectedRegion?item.regionId===selectedRegion.id:true);
+ });
+
+ const curLesson = activeUnit ? activeUnit.lessons[activeUnit.currentLesson] : null;
+
+ return(
+  <div className="flex flex-col lg:flex-row min-h-screen">
+   {/* BARRA LATERAL */}
+   <aside className="w-full lg:w-80 bg-[#fdf6e3] border-r-[6px] border-[#2d4a22] p-5 flex flex-col justify-between shrink-0 relative">
+     <div className="absolute top-2 right-3 text-2xl sun-float">☀️</div>
+     <div>
+       <div className="flex items-center gap-3 mb-6 cursor-pointer" onClick={()=>{setCurrentView('mapa');setSelectedRegion(null);}}>
+         <div className="w-12 h-12 rounded-[14px] bg-[#77c043] border-[4px] border-[#2d4a22] flex items-center justify-center font-black text-2xl text-white shadow-[4px_4px_0_#2d4a22]">S</div>
+         <div><h1 className="font-black text-2xl text-[#2d4a22] leading-none tracking-tighter">SEMITOPIA</h1><span className="text-[11px] font-black tracking-widest text-[#8d6e63] uppercase">Defiende el Conocimiento 🌻🧟</span></div>
+       </div>
+
+       {/* TARJETA USUARIO */}
+       <div className="bg-white wood-border rounded-[20px] p-4 mb-6 relative">
+         <div className="absolute -top-3 -right-3 w-8 h-8 bg-[#ffdd4a] border-[3px] border-[#2d4a22] rounded-full flex items-center justify-center sun-float">☀️</div>
+         <div className="flex items-center gap-3 mb-3">
+           <div className="relative"><div className="w-12 h-12 rounded-full bg-[#a3d977] border-[3px] border-[#2d4a22] flex items-center justify-center text-xl">👩‍🌾</div><span className="absolute -bottom-1 -right-1 bg-[#77c043] border-2 border-[#2d4a22] text-white text-[10px] font-black px-1.5 rounded-full">Lv.{userStats.level}</span></div>
+           <div><h2 className="font-black text-sm text-[#2d4a22]">Valeria Jiménez</h2><p className="text-xs font-black text-[#77c043]">{userStats.title}</p></div>
+         </div>
+         <div className="space-y-1">
+           <div className="flex justify-between text-[11px] font-black text-[#8d6e63]"><span>Soles ☀️</span><span>{userStats.xp}/{userStats.nextXp}</span></div>
+           <div className="w-full h-4 bg-[#fdf6e3] border-[3px] border-[#2d4a22] rounded-full overflow-hidden p-[2px]"><div className="h-full bg-[#ffdd4a] rounded-full transition-all" style={{width:`${Math.min(100, (userStats.xp/userStats.nextXp)*100)}%`}}></div></div>
+         </div>
+         <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+           <div className="bg-[#fdf6e3] border-[3px] border-[#2d4a22] p-1.5 rounded-xl"><p className="text-[9px] font-black">RACHA</p><p className="text-xs font-black">🔥 {userStats.streak}</p></div>
+           <div className="bg-[#ffdd4a] border-[3px] border-[#2d4a22] p-1.5 rounded-xl"><p className="text-[9px] font-black">SOLES</p><p className="text-xs font-black">☀️ {userStats.soles}</p></div>
+           <div className="bg-[#77c043] border-[3px] border-[#2d4a22] p-1.5 rounded-xl text-white"><p className="text-[9px] font-black">PTS</p><p className="text-xs font-black">⭐ {userStats.points}</p></div>
+         </div>
+       </div>
+
+       {/* NAVEGACIÓN */}
+       <nav className="space-y-2 font-black text-[13px]">
+         {[
+           {id:'mapa',label:'Mapa Césped',icon:'🗺️'},
+           {id:'social',label:'DaveChat & Feed',icon:'💬'},
+           {id:'retos',label:'Retos Diarios',icon:'🎯'},
+           {id:'ruta',label:'Ruta Plantas',icon:'🌻'},
+           {id:'cursos',label:'Almanaque',icon:'📚'},
+           {id:'podcast',label:'Radio Dave',icon:'🎙️'},
+           {id:'analytics',label:'Jardín Stats',icon:'📊'},
+           {id:'pqrs',label:'Casa / Ayuda',icon:'🏠'}
+         ].map(item=>(
+           <button key={item.id} onClick={()=>{setCurrentView(item.id);setSelectedRegion(null);}} className={`w-full flex items-center justify-between px-4 py-3 rounded-full border-[3px] transition ${currentView===item.id?'bg-[#77c043] text-white border-[#2d4a22] shadow-[4px_4px_0_#2d4a22]':'bg-white text-[#2d4a22] border-[#2d4a22] hover:translate-y-[-1px] shadow-[3px_3px_0_#2d4a22]'}`}>
+             <div className="flex items-center gap-3"><span>{item.icon}</span>{item.label}</div>
+             {item.id==='social' && <span className="bg-[#ff9800] text-white text-[10px] px-2 py-0.5 rounded-full border-2 border-[#2d4a22]">Nuevo</span>}
+           </button>
+         ))}
+       </nav>
+     </div>
+     <div className="mt-6 pt-3 border-t-[3px] border-[#2d4a22]/20 text-[11px] font-black text-[#8d6e63]"><p>SEMITOPIA © 2026</p><p className="text-[10px]">🌻 vs 🧟 UdeA</p></div>
+   </aside>
+
+   {/* CONTENIDO PRINCIPAL */}
+   <main className="flex-1 p-4 lg:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
+     {unlockNotification && (<div className="mb-6 bg-[#77c043] border-[4px] border-[#2d4a22] p-4 rounded-[16px] shadow-[6px_6px_0_#2d4a22] flex justify-between items-center"><p className="font-black text-white text-sm">{unlockNotification}</p><button onClick={()=>setUnlockNotification(null)} className="bg-white border-[3px] border-[#2d4a22] px-3 py-1 rounded-full text-[11px] font-black">X</button></div>)}
+     
+     {/* VISTA RED SOCIAL Y DAVECHAT (NUEVO APARTADO) */}
+     {currentView==='social' && (
+       <div className="space-y-6">
+         {/* BARRA INTERACTIVA RED SOCIAL */}
+         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white wood-border rounded-[20px] p-4">
+           <div>
+             <h2 className="text-2xl font-black uppercase">💬 DAVECHAT & SOCIAL FEED 🌻</h2>
+             <p className="text-xs font-bold text-[#8d6e63]">Conéctate con otros semilleristas y coordina la defensa del jardín</p>
+           </div>
+           <div className="flex bg-[#fdf6e3] border-[3px] border-[#2d4a22] rounded-full p-1 gap-1">
+             <button onClick={()=>setSocialTab('chats')} className={`px-4 py-2 rounded-full font-black text-xs border-2 transition ${socialTab==='chats'?'bg-[#77c043] text-white border-[#2d4a22] shadow-[2px_2px_0_#2d4a22]':'border-transparent text-[#2d4a22]'}`}>💬 DaveChat</button>
+             <button onClick={()=>setSocialTab('feed')} className={`px-4 py-2 rounded-full font-black text-xs border-2 transition ${socialTab==='feed'?'bg-[#ffdd4a] text-[#2d4a22] border-[#2d4a22] shadow-[2px_2px_0_#2d4a22]':'border-transparent text-[#2d4a22]'}`}>📸 Muro Jardín</button>
+           </div>
+         </div>
+
+         {socialTab === 'chats' ? (
+           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[550px]">
+             {/* LISTA DE CHATS ESTILO WHATSAPP */}
+             <div className="lg:col-span-4 bg-white wood-border rounded-[24px] p-4 flex flex-col overflow-hidden">
+               <h3 className="font-black text-sm uppercase mb-3 flex items-center justify-between">
+                 <span>Canales y DMs</span>
+                 <span className="bg-[#77c043] text-white text-[10px] px-2 py-0.5 rounded-full border-2 border-[#2d4a22]">Online</span>
+               </h3>
+               <div className="space-y-2 overflow-y-auto flex-1 pr-1">
+                 {chats.map(chat => (
+                   <div 
+                     key={chat.id}
+                     onClick={()=>setActiveChatId(chat.id)}
+                     className={`p-3 rounded-[16px] border-[3px] flex items-center justify-between cursor-pointer transition ${activeChatId===chat.id?'bg-[#ffdd4a] border-[#2d4a22] shadow-[3px_3px_0_#2d4a22]':'bg-[#fdf6e3] border-[#2d4a22] hover:bg-white'}`}
+                   >
+                     <div className="flex items-center gap-3">
+                       <div className="w-10 h-10 rounded-full bg-white border-2 border-[#2d4a22] flex items-center justify-center text-xl shrink-0">{chat.icon}</div>
+                       <div>
+                         <h4 className="font-black text-xs text-[#2d4a22] leading-tight">{chat.name}</h4>
+                         <p className="text-[10px] font-bold text-[#8d6e63]">{chat.status || (chat.type==='group'?'Grupo de Semilleros':'Contacto')}</p>
+                       </div>
+                     </div>
+                     {chat.unread > 0 && (
+                       <span className="bg-[#ff9800] text-white font-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#2d4a22]">{chat.unread}</span>
+                     )}
+                   </div>
+                 ))}
+               </div>
+             </div>
+
+             {/* VENTANA DE CONVERSACIÓN */}
+             <div className="lg:col-span-8 bg-white wood-border rounded-[24px] flex flex-col overflow-hidden">
+               {/* ENCABEZADO CHAT */}
+               <div className="p-3 bg-[#fdf6e3] border-b-[4px] border-[#2d4a22] flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-full bg-white border-2 border-[#2d4a22] flex items-center justify-center text-xl">
+                   {chats.find(c=>c.id===activeChatId)?.icon || '💬'}
+                 </div>
+                 <div>
+                   <h3 className="font-black text-sm">{chats.find(c=>c.id===activeChatId)?.name}</h3>
+                   <span className="text-[10px] font-bold text-[#77c043]">● En línea en el césped</span>
+                 </div>
+               </div>
+
+               {/* MENSAJES */}
+               <div className="flex-1 p-4 overflow-y-auto space-y-3 grass-bg">
+                 {(messages[activeChatId] || []).map(msg => (
+                   <div key={msg.id} className={`flex gap-2 max-w-[80%] ${msg.isMe?'ml-auto flex-row-reverse':''}`}>
+                     <div className="w-8 h-8 rounded-full bg-white border-2 border-[#2d4a22] flex items-center justify-center text-sm shrink-0 shadow-[2px_2px_0_#2d4a22]">{msg.avatar}</div>
+                     <div className={`p-3 rounded-[18px] border-[3px] border-[#2d4a22] shadow-[3px_3px_0_#2d4a22] ${msg.isMe?'bg-[#ffdd4a] text-[#2d4a22]':'bg-white text-[#2d4a22]'}`}>
+                       <div className="flex justify-between items-center gap-4 mb-1 border-b border-[#2d4a22]/20 pb-1">
+                         <span className="font-black text-[10px]">{msg.sender}</span>
+                         <span className="text-[9px] font-bold opacity-75">{msg.time}</span>
+                       </div>
+                       <p className="text-xs font-bold leading-snug">{msg.text}</p>
+                     </div>
+                   </div>
+                 ))}
+                 <div ref={chatEndRef} />
+               </div>
+
+               {/* CAJA PARA ENVIAR */}
+               <form onSubmit={sendMessage} className="p-3 bg-white border-t-[4px] border-[#2d4a22] flex gap-2">
+                 <input 
+                   value={newMessage}
+                   onChange={e=>setNewMessage(e.target.value)}
+                   placeholder="Escribe un mensaje en el semillero..." 
+                   className="flex-1 bg-[#fdf6e3] border-[3px] border-[#2d4a22] rounded-full px-4 py-2 text-xs font-bold outline-none"
+                 />
+                 <button type="submit" className="px-5 py-2 bg-[#77c043] border-[3px] border-[#2d4a22] rounded-full text-white font-black text-xs shadow-[3px_3px_0_#2d4a22] hover:brightness-105">Enviar ☀️</button>
+               </form>
+             </div>
+           </div>
+         ) : (
+           /* MURO ESTILO INSTAGRAM / FEED */
+           <div className="max-w-2xl mx-auto space-y-6">
+             {/* CAJA CREAR POST */}
+             <div className="bg-white wood-border rounded-[24px] p-4 space-y-3">
+               <h3 className="font-black text-sm uppercase flex items-center gap-2"><span>📸</span> Compartir Avance de Investigación</h3>
+               <form onSubmit={createPost} className="space-y-3">
+                 <textarea 
+                   value={newPostText}
+                   onChange={e=>setNewPostText(e.target.value)}
+                   placeholder="¿Qué semilla estás sembrando hoy? Comparte hallazgos, eventos o fotos..." 
+                   rows="3"
+                   className="w-full bg-[#fdf6e3] border-[3px] border-[#2d4a22] rounded-[16px] p-3 text-xs font-bold outline-none"
+                 />
+                 <div className="flex justify-between items-center">
+                   <span className="text-[10px] font-black text-[#8d6e63]">Ganas +5 Soles ☀️ por publicar</span>
+                   <button type="submit" className="px-5 py-2 bg-[#ffdd4a] border-[3px] border-[#2d4a22] rounded-full font-black text-xs shadow-[3px_3px_0_#2d4a22]">Publicar 🌻</button>
+                 </div>
+               </form>
+             </div>
+
+             {/* FEED DE PUBLICACIONES */}
+             {posts.map(post => (
+               <div key={post.id} className="bg-white wood-border rounded-[24px] p-5 space-y-3 seed-card">
+                 <div className="flex justify-between items-center border-b-[3px] border-[#fdf6e3] pb-3">
+                   <div className="flex items-center gap-3">
+                     <div className="w-10 h-10 rounded-full bg-[#a3d977] border-2 border-[#2d4a22] flex items-center justify-center text-xl">{post.avatar}</div>
+                     <div>
+                       <h4 className="font-black text-xs text-[#2d4a22]">{post.author}</h4>
+                       <p className="text-[10px] font-bold text-[#8d6e63]">Subregión: {post.region} • {post.time}</p>
+                     </div>
+                   </div>
+                   <span className="bg-[#fdf6e3] border-2 border-[#2d4a22] text-[10px] font-black px-3 py-1 rounded-full">🌻 Verificado</span>
+                 </div>
+
+                 <p className="text-xs font-bold text-[#2d4a22] leading-relaxed">{post.text}</p>
+
+                 <div className="flex items-center gap-4 pt-2 border-t-[3px] border-[#fdf6e3] text-xs font-black">
+                   <button 
+                     onClick={()=>toggleLikePost(post.id)}
+                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-[#2d4a22] transition ${post.liked?'bg-[#ff8a80] text-white':'bg-[#fdf6e3] text-[#2d4a22]'}`}
+                   >
+                     <span>❤️</span> {post.likes} Soles
+                   </button>
+                   <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-[#2d4a22] bg-[#fdf6e3] text-[#2d4a22]">
+                     <span>💬</span> {post.comments} Comentarios
+                   </button>
+                 </div>
+               </div>
+             ))}
+           </div>
+         )}
+       </div>
+     )}
+
+     {/* VISTA MAPA */}
+     {currentView==='mapa' && (
+       <div className="space-y-6">
+         <div className="flex flex-col md:flex-row justify-between items-start gap-4 bg-white wood-border rounded-[20px] p-4"><div><h2 className="text-2xl font-black uppercase">🌻 Césped de Antioquia 🧟</h2><p className="text-xs font-bold text-[#8d6e63]">9 parcelas para defender con semilleros</p></div><div className="flex items-center gap-2 bg-[#ffdd4a] border-[3px] border-[#2d4a22] px-4 py-2 rounded-full text-xs font-black">🌻 {userStats.unlockedRegions}/{userStats.totalRegions} Defendidas</div></div>
+         {!selectedRegion ? (
+           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+             <div className="lg:col-span-8 grass-bg rounded-[24px] p-6 min-h-[460px] flex flex-col items-center relative overflow-hidden">
+               <div className="absolute top-3 left-3 bg-white border-[3px] border-[#2d4a22] px-3 py-1 rounded-full text-[11px] font-black shadow-[3px_3px_0_#2d4a22]">☀️ ¡Haz clic para plantar!</div>
+               <svg viewBox="0 0 600 500" className="w-full max-w-lg h-auto drop-shadow-[4px_4px_0_#2d4a22]">
+                 {[
+                   {id:4,d:"M 120 80 L 220 70 L 210 170 L 150 190 L 100 130 Z",x:145,y:125},
+                   {id:5,d:"M 220 70 L 340 80 L 330 170 L 210 170 Z",x:255,y:120},
+                   {id:9,d:"M 340 80 L 480 110 L 440 210 L 330 170 Z",x:380,y:135},
+                   {id:6,d:"M 150 190 L 250 180 L 240 280 L 160 270 Z",x:175,y:225},
+                   {id:1,d:"M 250 180 L 330 170 L 320 270 L 240 280 Z",x:260,y:215},
+                   {id:2,d:"M 330 170 L 440 210 L 420 310 L 320 270 Z",x:355,y:230},
+                   {id:3,d:"M 160 270 L 280 280 L 260 380 L 180 370 Z",x:200,y:315},
+                   {id:7,d:"M 280 280 L 390 290 L 370 410 L 260 380 Z",x:300,y:335},
+                   {id:8,d:"M 390 290 L 490 300 L 460 410 L 370 410 Z",x:400,y:345}
+                 ].map(p=>{
+                   const reg=regions.find(r=>r.id===p.id);
+                   return <g key={p.id} onClick={()=>setSelectedRegion(reg)} className="cursor-pointer hover:brightness-110">
+                     <path d={p.d} fill={reg.locked?"#8d6e63":"#77c043"} stroke="#2d4a22" strokeWidth="4" />
+                     {reg.locked && <path d={p.d} fill="url(#zombieStripe)" opacity="0.4"/>}
+                     <text x={p.x} y={p.y} fontSize="11" fontWeight="900" fill="white" stroke="#2d4a22" strokeWidth="0.5">{p.id}. {reg.name}</text>
+                     <text x={p.x+10} y={p.y+18} fontSize="16">{reg.locked?"🧟":"🌻"}</text>
+                   </g>
+                 })}
+                 <defs><pattern id="zombieStripe" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)"><rect width="5" height="10" fill="#2d4a22"/></pattern></defs>
+               </svg>
+             </div>
+             <div className="lg:col-span-4 bg-white wood-border rounded-[24px] p-5 space-y-3">
+               <h3 className="text-xs font-black uppercase tracking-widest">🌻 Parcelas del jardín</h3>
+               <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                 {regions.map(reg=>(
+                   <div key={reg.id} onClick={()=>setSelectedRegion(reg)} className={`p-3 rounded-full border-[3px] flex justify-between items-center cursor-pointer font-black text-[13px] ${reg.locked?'bg-[#efebe9] border-[#8d6e63] text-[#8d6e63]':'bg-[#e8f5e9] border-[#2d4a22] text-[#2d4a22] seed-card'}`}>
+                     <div className="flex items-center gap-2"><span className="w-7 h-7 rounded-full bg-white border-2 border-[#2d4a22] flex items-center justify-center text-xs">{reg.id}</span>{reg.name}</div>
+                     <span className={`px-2 py-1 rounded-full text-[10px] border-2 ${reg.locked?'bg-[#8d6e63] text-white border-[#2d4a22]':'bg-[#ffdd4a] border-[#2d4a22]'}`}>{reg.locked?'🧟 Bloqueada':'🌻 Plantar'}</span>
+                   </div>
+                 ))}
+               </div>
+             </div>
+           </div>
+         ):(
+           <div className="space-y-6">
+             <div className="flex items-center justify-between bg-white wood-border p-3 rounded-full">
+               <div className="flex items-center gap-2"><button onClick={()=>setSelectedRegion(null)} className="px-4 py-2 bg-[#fdf6e3] border-[3px] border-[#2d4a22] rounded-full text-[11px] font-black">← Césped</button><h3 className="font-black text-lg">{selectedRegion.emoji} {selectedRegion.name.toUpperCase()}</h3></div>
+               {selectedRegion.locked && <span className="bg-[#8d6e63] text-white border-[3px] border-[#2d4a22] px-3 py-1 rounded-full text-[10px] font-black">🧟 INFESTADA</span>}
+             </div>
+             {selectedRegion.locked ? (
+               <div className="bg-white wood-border rounded-[24px] p-8 text-center max-w-xl mx-auto space-y-4"><div className="text-6xl zombie-shake">🧟‍♂️🌻</div><h4 className="font-black text-lg">¡Zombies en {selectedRegion.name}!</h4><p className="text-xs font-bold text-[#8d6e63]">{selectedRegion.req}</p><button onClick={()=>handleUnlockRegion(selectedRegion)} className="px-6 py-3 bg-[#77c043] border-[4px] border-[#2d4a22] rounded-full font-black text-white shadow-[4px_4px_0_#2d4a22]">🌻 Plantar defensa +50 ☀️</button></div>
+             ):(
+               <div className="space-y-4">
+                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                   {['🔬 Semilleros','💡 Proyectos','📢 Convocatorias','📅 Eventos','🏆 Logros'].map(cat=>{
+                     const clean=cat.split(' ')[1];
+                     return <button key={cat} onClick={()=>setActiveCategory(clean)} className={`p-3 rounded-[16px] border-[3px] font-black text-[11px] ${activeCategory===clean?'bg-[#ffdd4a] border-[#2d4a22] shadow-[3px_3px_0_#2d4a22]':'bg-white border-[#2d4a22] text-[#8d6e63]'}`}>{cat}</button>
+                   })}
+                 </div>
+                 <div className="bg-white wood-border rounded-full p-2 flex gap-2"><input value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} placeholder={`Buscar semillas en ${selectedRegion.name}...`} className="flex-1 bg-[#fdf6e3] border-[3px] border-[#2d4a22] rounded-full px-4 py-2 text-xs font-bold outline-none"/><div className="hidden md:flex items-center px-3 text-[11px] font-black">☀️ {activeCategory}</div></div>
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                   {filteredSemilleros.length?filteredSemilleros.map(item=>(
+                     <div key={item.id} className="bg-white wood-border rounded-[20px] p-4 seed-card">
+                       <div className="flex justify-between"><span className="text-[10px] font-black bg-[#fdf6e3] border-2 border-[#2d4a22] px-2 py-1 rounded-full">{item.campus}</span><span className="text-lg">{item.emoji}</span></div>
+                       <h4 className="font-black mt-2">{item.name}</h4><p className="text-[11px] font-bold text-[#8d6e63] mt-1">{item.desc}</p>
+                       <div className="flex gap-1 mt-2">{item.tags.map(t=><span key={t} className="text-[9px] font-black bg-[#e8f5e9] border-2 border-[#2d4a22] px-2 rounded-full">#{t}</span>)}</div>
+                       <button onClick={()=>setSelectedCardModal(item)} className="w-full mt-3 py-2 bg-[#77c043] border-[3px] border-[#2d4a22] rounded-full text-white font-black text-[11px] shadow-[3px_3px_0_#2d4a22]">🌻 Ver semilla</button>
+                     </div>
+                   )):(
+                     <div className="col-span-full bg-white wood-border rounded-[20px] p-6 text-center"><p className="font-black text-sm">¡No hay semillas aquí! 🧟</p>{!globalSearch && <button onClick={()=>setGlobalSearch(true)} className="mt-3 px-4 py-2 bg-[#7c4dff] text-white border-[3px] border-[#2d4a22] rounded-full font-black text-xs">🌻 Buscar en otras parcelas</button>}</div>
+                   )}
+                 </div>
+               </div>
+             )}
+           </div>
+         )}
+       </div>
+     )}
+
+     {/* VISTA RETOS */}
+     {currentView==='retos' && (
+       <div className="max-w-3xl mx-auto space-y-4">
+         <div className="bg-white wood-border rounded-[20px] p-4 flex justify-between items-center"><div><h2 className="font-black text-xl uppercase">🎯 Retos del jardín</h2><p className="text-[11px] font-bold text-[#8d6e63]">Gana soles y mantén la racha</p></div><div className="bg-[#ffdd4a] border-[3px] border-[#2d4a22] px-4 py-2 rounded-full text-center font-black">🔥 {userStats.streak} Días</div></div>
+         {retos.map(r=>(
+           <div key={r.id} className={`p-4 rounded-[16px] border-[3px] flex justify-between items-center ${r.completed?'bg-[#efebe9] border-[#8d6e63] opacity-60':'bg-white border-[#2d4a22] wood-border'}`}>
+             <div><h3 className="font-black text-sm">{r.icon} {r.title} <span className="bg-[#ffdd4a] border-2 border-[#2d4a22] px-2 rounded-full text-[10px] ml-2">+{r.xp} ☀️</span></h3><p className="text-[11px] font-bold text-[#8d6e63]">{r.desc}</p></div>
+             {r.completed?<span className="font-black text-xs bg-[#77c043] text-white px-3 py-1 rounded-full border-2 border-[#2d4a22]">✓ Plantado</span>:<button onClick={()=>completeReto(r.id,r.xp)} className="px-4 py-2 bg-[#ff9800] border-[3px] border-[#2d4a22] rounded-full font-black text-white text-xs shadow-[3px_3px_0_#2d4a22]">Recolectar ☀️</button>}
+           </div>
+         ))}
+       </div>
+     )}
+
+     {/* VISTA RUTA */}
+     {currentView==='ruta' && (
+       <div className="max-w-md mx-auto space-y-6">
+         <div className="bg-white wood-border rounded-[20px] p-4 text-center">
+           <h2 className="font-black text-xl">🌻 RUTA DE DEFENSA</h2>
+           <p className="text-[11px] font-bold text-[#8d6e63]">Toca una planta, responde las lecciones y defiende 🌻🧟</p>
+         </div>
+         <div className="relative py-6">
+           <div className="duo-path-line"></div>
+           <div className="space-y-10 relative z-10">
+             {units.map(u=>(
+               <div 
+                 key={u.id} 
+                 onClick={()=>openUnit(u)}
+                 className={`w-72 mx-auto p-4 rounded-[20px] border-[4px] text-center wood-border cursor-pointer transition transform hover:scale-105 ${u.locked?'bg-[#efebe9] opacity-75':'bg-white'}`}
+                 style={{marginLeft:u.id%2===0?'40px':'0'}}
+               >
+                 <div className="text-4xl">{u.emoji}</div>
+                 <h3 className="font-black text-sm mt-1">{u.title}</h3>
+                 <p className="text-[10px] font-bold text-[#8d6e63]">{u.subtitle}</p>
+                 
+                 <div className="mt-3">
+                   <div className="h-3 bg-[#fdf6e3] border-2 border-[#2d4a22] rounded-full p-[2px]">
+                     <div className="h-full bg-[#77c043] rounded-full transition-all" style={{width:`${u.progress}%`}}></div>
+                   </div>
+                   <span className="text-[10px] font-black mt-1 inline-block">
+                     {u.completed?'✓ Defendida':u.locked?'🔒 Bloqueada':`${u.progress}% - Jugar`}
+                   </span>
+                 </div>
+               </div>
+             ))}
+           </div>
+         </div>
+       </div>
+     )}
+
+     {/* VISTA CURSOS / ALMANAQUE */}
+     {currentView==='cursos' && (
+       <div className="space-y-4"><div className="bg-white wood-border rounded-[20px] p-4"><h2 className="font-black text-xl">📚 Almanaque de Semillas</h2><p className="text-[11px] font-bold text-[#8d6e63]">Compra con soles</p></div>
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+           {CURSOS_DATA.map(c=><div key={c.id} className="bg-white wood-border rounded-[20px] p-4"><span className="text-[10px] font-black bg-[#ffdd4a] border-2 border-[#2d4a22] px-2 py-1 rounded-full">{c.dur}</span><h3 className="font-black mt-2 text-sm">{c.emoji} {c.title}</h3><p className="text-[11px] font-bold text-[#8d6e63] mt-1">{c.desc}</p><button className="w-full mt-3 py-2 bg-[#77c043] border-[3px] border-[#2d4a22] rounded-full text-white font-black text-xs">🌻 Plantar por ☀️</button></div>)}
+         </div>
+       </div>
+     )}
+
+     {/* VISTA PODCAST */}
+     {currentView==='podcast' && (
+       <div className="max-w-3xl mx-auto space-y-4"><div className="bg-white wood-border rounded-[20px] p-4"><h2 className="font-black text-xl">🎙️ Radio del Loco Dave</h2><p className="text-[11px] font-bold">Historias del jardín</p></div><div className="bg-[#2d4a22] wood-border rounded-[20px] p-3"><div className="aspect-video rounded-[12px] overflow-hidden border-[3px] border-white"><iframe className="w-full h-full" src={SRC_PODCAST_LINK} allowFullScreen></iframe></div></div></div>
+     )}
+
+     {/* VISTA PQRS / CASA */}
+     {currentView==='pqrs' && (
+       <div className="max-w-2xl mx-auto space-y-4"><div className="bg-white wood-border rounded-[20px] p-4"><h2 className="font-black text-xl">🏠 Casa de Ayuda</h2><p className="text-[11px] font-bold text-[#8d6e63]">El Loco Dave te escucha</p></div>
+         <div className="bg-white wood-border rounded-[20px] p-5">
+           <div className="bg-[#fdf6e3] border-[3px] border-[#2d4a22] p-3 rounded-full text-[11px] font-black flex justify-between"><span>📧 Buzón:</span><code className="font-black">{EMAIL_CONTACTO_PQRS}</code></div>
+           {pqrsSuccess? <div className="text-center py-8"><div className="text-5xl">🌻</div><h4 className="font-black">¡Mensaje plantado!</h4><button onClick={()=>setPqrsSuccess(false)} className="mt-3 px-4 py-2 bg-[#fdf6e3] border-[3px] border-[#2d4a22] rounded-full font-black text-xs">Otro</button></div>:
+           <form onSubmit={e=>{e.preventDefault();setPqrsSuccess(true);}} className="space-y-3 mt-4">
+             <input required placeholder="Tu nombre jardinero" className="w-full bg-[#fdf6e3] border-[3px] border-[#2d4a22] rounded-full px-4 py-3 text-xs font-bold outline-none"/>
+             <textarea required rows="4" placeholder="¿Zombies en el jardín? Cuéntanos..." className="w-full bg-[#fdf6e3] border-[3px] border-[#2d4a22] rounded-[16px] px-4 py-3 text-xs font-bold outline-none"></textarea>
+             <button className="w-full py-3 bg-[#ffdd4a] border-[4px] border-[#2d4a22] rounded-full font-black shadow-[4px_4px_0_#2d4a22]">Enviar con ☀️</button>
+           </form>}
+         </div>
+       </div>
+     )}
+
+     {/* VISTA STATS */}
+     {currentView==='analytics' && (
+       <div className="space-y-4"><div className="bg-white wood-border rounded-[20px] p-4"><h2 className="font-black text-xl">📊 Estado del Césped</h2></div>
+         <div className="grid grid-cols-3 gap-3">
+           <div className="bg-white wood-border rounded-[16px] p-4"><p className="text-[10px] font-black">Jardineros</p><p className="text-2xl font-black text-[#77c043]">1,420</p></div>
+           <div className="bg-white wood-border rounded-[16px] p-4"><p className="text-[10px] font-black">Top Parcela</p><p className="text-lg font-black text-[#7c4dff]">Oriente</p></div>
+           <div className="bg-white wood-border rounded-[16px] p-4"><p className="text-[10px] font-black">Zombies</p><p className="text-2xl font-black text-[#8d6e63]">215</p></div>
+         </div>
+       </div>
+     )}
+   </main>
+
+   {/* MODAL PARA DETALLES DE SEMILLEROS */}
+   {selectedCardModal && (
+     <div className="fixed inset-0 bg-[#2d4a22]/80 z-50 flex items-center justify-center p-4"><div className="bg-[#fdf6e3] border-[4px] border-[#2d4a22] rounded-[24px] max-w-md w-full p-6 relative wood-border"><div className="absolute -top-4 -right-4 w-10 h-10 bg-[#ffdd4a] border-[3px] border-[#2d4a22] rounded-full flex items-center justify-center sun-float">☀️</div><button onClick={()=>setSelectedCardModal(null)} className="absolute top-3 right-3 w-8 h-8 bg-white border-[3px] border-[#2d4a22] rounded-full font-black">✕</button><h3 className="font-black text-lg">{selectedCardModal.emoji} {selectedCardModal.name}</h3><p className="text-xs font-bold text-[#8d6e63] mt-1">{selectedCardModal.desc}</p><p className="text-xs font-black text-[#77c043] mt-2">{selectedCardModal.coord}</p><button onClick={()=>{setUnlockNotification(`🌻 ¡Semilla ${selectedCardModal.name} plantada!`); setSelectedCardModal(null);}} className="w-full mt-4 py-3 bg-[#77c043] border-[3px] border-[#2d4a22] rounded-full text-white font-black">🌻 ¡Plantar ahora!</button></div></div>
+   )}
+
+   {/* MODAL INTERACTIVO DE LECCIONES */}
+   {activeUnit && curLesson && (
+     <div className="fixed inset-0 bg-[#2d4a22]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+       <div className="bg-[#fdf6e3] border-[5px] border-[#2d4a22] rounded-[24px] max-w-lg w-full wood-border overflow-hidden">
+         <div className="p-4 bg-white border-b-[4px] border-[#2d4a22] flex justify-between items-center font-black">
+           <span>{activeUnit.emoji} {activeUnit.title} — Lección {activeUnit.currentLesson+1}/{activeUnit.lessons.length}</span>
+           <button onClick={()=>setActiveUnit(null)} className="w-8 h-8 rounded-full border-[3px] border-[#2d4a22] bg-white flex items-center justify-center font-black">✕</button>
+         </div>
+         <div className="p-6">
+           <div className="bg-white border-[3px] border-[#2d4a22] rounded-[16px] p-4 shadow-[3px_3px_0_#2d4a22] font-black text-sm text-[#2d4a22]">
+             {curLesson.q}
+           </div>
+
+           <div className="mt-4 flex flex-col gap-2">
+             {curLesson.type==='mcq' && curLesson.opts.map((opt, i)=>{
+               let bg='bg-white';
+               if(lessonStatus!=='idle'){
+                 if(i===curLesson.correct) bg='bg-[#daf5c2]';
+                 else if(i===selOpt) bg='bg-[#ffd2d2]';
+               } else if(i===selOpt) bg='bg-[#ffdd4a]';
+
+               return (
+                 <button 
+                   key={i} 
+                   onClick={()=>lessonStatus==='idle'&&setSelOpt(i)}
+                   className={`text-left p-3 border-[3px] border-[#2d4a22] rounded-[14px] font-bold text-xs shadow-[3px_3px_0_#2d4a22] transition ${bg}`}
+                 >
+                   {String.fromCharCode(65+i)}. {opt}
+                 </button>
+               );
+             })}
+
+             {curLesson.type==='text' && (
+               <textarea 
+                 value={txtInput} 
+                 onChange={e=>setTxtInput(e.target.value)} 
+                 placeholder={curLesson.placeholder} 
+                 rows="3" 
+                 className="w-full p-3 border-[3px] border-[#2d4a22] rounded-[14px] shadow-[3px_3px_0_#2d4a22] font-bold text-xs outline-none bg-white"
+               ></textarea>
+             )}
+           </div>
+
+           {lessonStatus!=='idle' && (
+             <div className={`mt-4 p-3 border-[3px] border-[#2d4a22] rounded-[14px] font-black text-xs ${lessonStatus==='correct'?'bg-[#77c043] text-white':'bg-[#ff8a80] text-[#2d4a22]'}`}>
+               {lessonStatus==='correct'? `🌻 ${curLesson.ok}` : `🧟 ${curLesson.fail}`}
+             </div>
+           )}
+
+           <div className="mt-5 flex gap-3">
+             {lessonStatus==='wrong' && (
+               <button 
+                 onClick={()=>{setLessonStatus('idle'); setSelOpt(null);}} 
+                 className="flex-1 py-3 border-[3px] border-[#2d4a22] rounded-full bg-white font-black text-xs shadow-[3px_3px_0_#2d4a22]"
+               >
+                 REINTENTAR
+               </button>
+             )}
+             <button 
+               onClick={verifyLesson} 
+               disabled={lessonStatus==='correct' || (curLesson.type==='mcq' && selOpt===null) || (curLesson.type==='text' && !txtInput.trim())} 
+               className={`flex-1 py-3 border-[3px] border-[#2d4a22] rounded-full font-black text-xs shadow-[3px_3px_0_#2d4a22] ${lessonStatus==='correct'?'bg-[#ffdd4a]':'bg-[#77c043] text-white'}`}
+             >
+               {lessonStatus==='correct' ? '¡PLANTADO! 🌱' : 'PLANTAR ✓'}
+             </button>
+           </div>
+         </div>
+       </div>
+     </div>
+   )}
+  </div>
+ );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

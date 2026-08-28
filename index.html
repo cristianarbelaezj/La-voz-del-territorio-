@@ -53,7 +53,7 @@
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
 const EMAIL_CONTACTO_PQRS="contacto.semitopia@udea.edu.co";
-const SRC_PODCAST_LINK="https://www.youtube.com/embed/9bZkp7q19f0?si=r6fTw-Owmdtz3OWd";
+const SRC_PODCAST_LINK="https://www.youtube.com/embed/SGRnaqvjF6U?si=bGdrCwPUph-4BhBd";
 
 const SUBREGIONES_DATA=[
  {id:1,name:"Valle de Aburrá",locked:false,req:"Casa defendida",emoji:"🏠",plant:"🌻"},
@@ -665,10 +665,29 @@ function App(){
        </div>
      )}
 
-     {/* VISTA PODCAST */}
-     {currentView==='podcast' && (
-       <div className="max-w-3xl mx-auto space-y-4"><div className="bg-white wood-border rounded-[20px] p-4"><h2 className="font-black text-xl">🎙️ Radio del Loco Dave</h2><p className="text-[11px] font-bold">Historias del jardín</p></div><div className="bg-[#2d4a22] wood-border rounded-[20px] p-3"><div className="aspect-video rounded-[12px] overflow-hidden border-[3px] border-white"><iframe className="w-full h-full" src={SRC_PODCAST_LINK} allowFullScreen></iframe></div></div></div>
-     )}
+    
+   {/* VISTA PODCAST */}
+{currentView==='podcast' && (
+  <div className="max-w-xs mx-auto space-y-4">
+    <div className="bg-white wood-border rounded-[20px] p-4 text-center">
+      <h2 className="font-black text-xl">🎙️ Radio del Loco Dave</h2>
+      <p className="text-[11px] font-bold">Historias del jardín</p>
+    </div>
+    
+    <div className="bg-[#2d4a22] wood-border rounded-[20px] p-2">
+      <div className="aspect-[9/16] rounded-[12px] overflow-hidden border-[3px] border-white">
+        <iframe 
+          className="w-full h-full" 
+          src={SRC_PODCAST_LINK} 
+          title="YouTube Short"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        ></iframe>
+      </div>
+    </div>
+  </div>
+)}
+
 
      {/* VISTA PQRS / CASA */}
      {currentView==='pqrs' && (
